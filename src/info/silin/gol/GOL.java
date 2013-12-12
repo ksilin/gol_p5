@@ -1,34 +1,45 @@
 package info.silin.gol;
 
 import processing.core.PApplet;
+import processing.event.KeyEvent;
 
 public class GOL extends PApplet {
 
-    private Cell[][] cells = new Cell[100][100];
+    private int w = 64;
+    private int h = 64;
+
+    private Cell[][] cells = new Cell[w][h];
+
+    private boolean running = true;
+    private boolean rendering = true;
+
+    private int factor = 10;
 
     @Override
     public void setup() {
-
         initCells();
-        size(400, 400);
+        size(w * factor, h * factor);
         background(10);
         smooth();
     }
 
     @Override
     public void draw() {
-
-        updateCells();
-        drawCells();
-        switchState();
-
-        System.out.println("fps:" + frameRate);
+        background(10);
+        if (running) {
+            updateCells();
+        }
+        if (rendering) {
+            drawCells();
+        }
+        fill(255);
+        text("fps: " + frameRate, 20, 20);
     }
 
     private void updateCells() {
-        for (int x = 0; x < 100; x++) {
-            for (int y = 0; y < 100; y++) {
-//                System.out.println("x: " + x + " y: " + y + "cell: " + cell);
+        switchState();
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
                 applyRules(x, y);
             }
         }
@@ -42,9 +53,9 @@ public class GOL extends PApplet {
         if (State.ALIVE == cell.getState()) {
 
             if (aliveNeighbors < 2) {
-            cell.setNextState(State.DEAD);
+                cell.setNextState(State.DEAD);
             } else if (aliveNeighbors > 3) {
-            cell.setNextState(State.DEAD);
+                cell.setNextState(State.DEAD);
             }
         }
         if (State.DEAD == cell.getState()) {
@@ -56,11 +67,11 @@ public class GOL extends PApplet {
     }
 
     private void drawCells() {
-        for (int x = 0; x < 100; x++) {
-            for (int y = 0; y < 100; y++) {
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
                 Cell cell = cells[x][y];
                 setFill(cell);
-                rect(x * 4, y * 4, x * 4 + 4, y * 4 + 4);
+                rect(x * factor, y * factor, x * factor + factor, y * factor + factor);
             }
         }
     }
@@ -75,8 +86,8 @@ public class GOL extends PApplet {
     }
 
     private void switchState() {
-        for (int x = 0; x < 100; x++) {
-            for (int y = 0; y < 100; y++) {
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
                 cells[x][y].switchToNextState();
             }
         }
@@ -85,39 +96,52 @@ public class GOL extends PApplet {
     public int aliveNeighbors(int x, int y) {
         int aliveNeighbors = 0;
 
-            for (int xOffset = -1; xOffset < 2; xOffset++) {
-                for (int yOffset = -1; yOffset < 2; yOffset++) {
-                    if (!(0 == xOffset && 0 == yOffset)) {
-
-                        int x_coord = x + xOffset;
-                        if(x_coord < 0){
-                            x_coord = 100 - x_coord;
-                        }
-                        if(x_coord > 100 - 1){
-                            x_coord = x_coord/100;
-                        }
-                        int y_coord = y + yOffset;
-                        if(y_coord < 0){
-                            y_coord = 100 - x_coord;
-                        }
-                        if(y_coord > 100 - 1){
-                            y_coord = y_coord % 100;
-                        }
-                        if (State.ALIVE == cells[x_coord][y_coord].getState()) {
-                            aliveNeighbors++;
-                        }
+        for (int xOffset = -1; xOffset < 2; xOffset++) {
+            for (int yOffset = -1; yOffset < 2; yOffset++) {
+                if (!(0 == xOffset && 0 == yOffset)) {
+                    int x_coord = costrainCoord(x, xOffset, w);
+                    int y_coord = costrainCoord(y, yOffset, h);
+                    if (State.ALIVE == cells[x_coord][y_coord].getState()) {
+                        aliveNeighbors++;
                     }
                 }
+            }
         }
         return aliveNeighbors;
     }
 
+    private int costrainCoord(int origin, int offset, int limit) {
+        int x_coord = origin + offset;
+        if (x_coord < 0) {
+            x_coord = limit - x_coord;
+        }
+        if (x_coord > w - 1) {
+            x_coord = x_coord % limit;
+        }
+        return x_coord;
+    }
+
     private void initCells() {
-        for (int x = 0; x < 100; x++) {
-            for (int y = 0; y < 100; y++) {
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
                 cells[x][y] = new Cell();
             }
         }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent event) {
+        char key = event.getKey();
+        if (key == 'p') {
+            running = !running;
+        }
+        if(key == 'o'){
+            rendering = !rendering;
+        }
+        if(key == 'r'){
+            initCells();
+        }
+        super.keyPressed(event);
     }
 
     static public void main(String[] args) {
